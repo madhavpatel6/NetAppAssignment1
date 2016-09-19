@@ -1,5 +1,6 @@
 import socket, sys, hashlib, pickle
 
+
 def main():
     if len(sys.argv) != 3:
         sys.exit("Usage: otexta \"Question\" \"ip_address_server\"")
@@ -11,8 +12,10 @@ def main():
     print("Server IP Address: ", host)
     size = 1024
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.connect((host,port))
-
+    try:
+        s.connect((host,port))
+    except ConnectionRefusedError:
+        sys.exit('Error: Invalid IP Address or Port. ')
     #compute MD5 Hash (Checksum)
     m = hashlib.md5()
     m.update(str(question).encode('utf-8'))
