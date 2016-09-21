@@ -1,4 +1,5 @@
 import sys, socket, pickle, hashlib
+from cryptography.fernet import Fernet
 import wolframalpha
 
 def main():
@@ -9,42 +10,48 @@ def main():
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.bind((host,port))
     s.listen(backlog)
+    server_address = socket.gethostbyname(socket.gethostname())
+    print("Server IP Address: ", server_address)
+    print("Server Port: ", port)
     wclient = wolframalpha.Client('V76GGA-6VAXGW25UP')
-    # res = wclient.query('temperature in Washington, DC on October 3, 2012')
-    # for pod in res.pods:
-    #    for sub in pod.subpods:
-    #        print(sub.text)
+
     while 1:
-        hasher = hashlib.md5()
         client, address = s.accept()
         print("Client Connected: ", address)
         data = client.recv(size)
+
         if data:
             # Load the data into a tuple
             questionpayload = pickle.loads(data)
             print("Question Payload: ", questionpayload)
 
             if len(questionpayload) != 4:
-                client.end(b'Error: Invalid payload packet.')
+                print('Error: Invalid payload packet detected.')
+                client.end(b'Error: Invalid payload packet detected.')
                 client.close()
                 continue;
 
             # Compute the MD5 Hash
-            hasher.update(str(questionpayload[1]).encode('utf-8'))
-            computedchecksum = hasher.digest()
-            print("Computed Checksum: ", computedchecksum)
+            computedchecksum = checksum(questionpayload[1])
+            print("Computed question checksum: ", computedchecksum)
 
             # Compare computed MD5 Hash with received hash
             if computedchecksum != questionpayload[2]:
                 #If we compute a different MD5 Hash then we send an error message back to the client and close the client connection
-                print('Invalid Check Sum Detected!')
-                client.send(b'Error: Invalid question checksum.')
+                print('Error: Computed question checksum does not match with passed checksum!')
+                client.send(b'Error: Computed question checksum does not match with passed checksum!')
                 client.close()
                 continue;
-
+            print("Question payload checksum OK.")
             # Otherwise send the question to wolfram alpha
-            question = questionpayload[1]
-            print("Question: ", question)
+
+            encrypted_question = questionpayload[1]
+            print("Encrypted question: ", encrypted_question)
+
+            # Decrypt question here
+            fernet_key = questionpayload[0]
+            f = Fernet(fernet_key)
+            question = f.decrypt(encrypted_question)
 
             res = wclient.query(question)
             resultText = ""
@@ -55,18 +62,25 @@ def main():
 
             print("Response from WolframAlpha: ", resultText)
 
-            hasher = hashlib.md5()
-            hasher.update(str(resultText).encode('utf-8'))
-            md5hash = hasher.digest()
-            print("Computed Response MD5 Hash: ", md5hash)
+            #Encrypt response here
+            encrypted_response = f.encrypt(resultText.encode('utf-8'))
 
-            response = (resultText, md5hash)
-            print("Response: ", response)
+            result_m5hash = checksum(encrypted_response)
+            print("Computed response checksum: ", result_m5hash)
+
+            response = (encrypted_response, result_m5hash)
+            print("Encrypted response: ", encrypted_response)
 
             pickledresponse = pickle.dumps(response)
             print("Pickled: ", pickledresponse)
             client.send(pickledresponse)
 
         client.close()
+
+
+def checksum(val):
+    hasher = hashlib.md5()
+    hasher.update(str(val).encode('utf-8'))
+    return hasher.hexdigest()
 
 if __name__ == "__main__" : main()

@@ -1,4 +1,5 @@
 import socket, sys, hashlib, pickle
+from cryptography.fernet import Fernet
 
 
 def main():
@@ -7,6 +8,7 @@ def main():
     question = sys.argv[1]
     print("Question Asked: ", question)
     host = sys.argv[2]
+
     #Should port be a command line argument?
     port = 5000
     print("Server IP Address: ", host)
@@ -16,14 +18,19 @@ def main():
         s.connect((host,port))
     except ConnectionRefusedError:
         sys.exit('Error: Invalid IP Address or Port. ')
+
+    fernet_key = Fernet.generate_key()
+    print("Encryption Key: ", fernet_key)
+    f = Fernet(fernet_key)
+    encrypted_question = f.encrypt(str(question).encode('utf-8'))
+    print("Encrypted Question: ", encrypted_question)
+
     #compute MD5 Hash (Checksum)
-    m = hashlib.md5()
-    m.update(str(question).encode('utf-8'))
-    checksum = m.digest()
-    print("MD5 Hash: ", checksum)
+    questionchecksum = checksum(encrypted_question)
+    print("MD5 Hash: ", questionchecksum)
 
     #Create a question payload
-    questionpayload = ('Key Goes Here' ,question, checksum, host)
+    questionpayload = (fernet_key, encrypted_question, questionchecksum, host)
     print("Question Payload: ", questionpayload)
 
     #Pickle the tuple to a string
@@ -37,24 +44,31 @@ def main():
     data = s.recv(size)
     if data:
         response = pickle.loads(data)
-        if(len(response) != 2):
+        if len(response) != 2:
             print('Invalid response payload.')
             s.close()
         print("Response: ", response)
 
-        m = hashlib.md5()
-        m.update(str(response[0]).encode('utf-8'))
-        computedresponsechecksum = m.digest()
+        computedresponsechecksum = checksum(response[0])
         print("Computed Checksum: ", computedresponsechecksum)
+
+        decrypted_response = f.decrypt(response[0])
+        print("Decrypted response: ", decrypted_response)
 
         # Compare computed MD5 Hash with received hash
         if computedresponsechecksum != response[1]:
             print('Invalid response checksum.')
             s.close()
-
-        responsetext = response[0]
+        print("Response payload checksum OK.")
+        responsetext = decrypted_response
         print('Result: ', responsetext)
     s.close()
+
+
+def checksum(val):
+    hasher = hashlib.md5()
+    hasher.update(str(val).encode('utf-8'))
+    return hasher.hexdigest()
 
 if __name__ == "__main__":
     main()
