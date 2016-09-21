@@ -35,8 +35,26 @@ def main():
 
     #Wait for a Response
     data = s.recv(size)
+    if data:
+        response = pickle.loads(data)
+        if(len(response) != 2):
+            print('Invalid response payload.')
+            s.close()
+        print("Response: ", response)
+
+        m = hashlib.md5()
+        m.update(str(response[0]).encode('utf-8'))
+        computedresponsechecksum = m.digest()
+        print("Computed Checksum: ", computedresponsechecksum)
+
+        # Compare computed MD5 Hash with received hash
+        if computedresponsechecksum != response[1]:
+            print('Invalid response checksum.')
+            s.close()
+
+        responsetext = response[0]
+        print('Result: ', responsetext)
     s.close()
-    print ('Received:', data)
 
 if __name__ == "__main__":
     main()

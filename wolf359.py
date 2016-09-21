@@ -24,6 +24,11 @@ def main():
             questionpayload = pickle.loads(data)
             print("Question Payload: ", questionpayload)
 
+            if len(questionpayload) != 4:
+                client.end(b'Error: Invalid payload packet.')
+                client.close()
+                continue;
+
             # Compute the MD5 Hash
             hasher.update(str(questionpayload[1]).encode('utf-8'))
             computedchecksum = hasher.digest()
@@ -33,20 +38,35 @@ def main():
             if computedchecksum != questionpayload[2]:
                 #If we compute a different MD5 Hash then we send an error message back to the client and close the client connection
                 print('Invalid Check Sum Detected!')
-                client.send(b'What the hell man. That was a jank message.')
+                client.send(b'Error: Invalid question checksum.')
                 client.close()
                 continue;
+
             # Otherwise send the question to wolfram alpha
             question = questionpayload[1]
             print("Question: ", question)
+
+            res = wclient.query(question)
+            resultText = ""
             try:
-                wclient.query(question)
+                resultText = (next(res.results).text)
             except:
-                client.send(b'Invalid AppId')
-                client.close()
-                sys.exit('Error: Invalid AppId')
-            # Send response back
-            client.send(data)
+                resultText = "Unknown question."
+
+            print("Response from WolframAlpha: ", resultText)
+
+            hasher = hashlib.md5()
+            hasher.update(str(resultText).encode('utf-8'))
+            md5hash = hasher.digest()
+            print("Computed Response MD5 Hash: ", md5hash)
+
+            response = (resultText, md5hash)
+            print("Response: ", response)
+
+            pickledresponse = pickle.dumps(response)
+            print("Pickled: ", pickledresponse)
+            client.send(pickledresponse)
+
         client.close()
 
 if __name__ == "__main__" : main()
