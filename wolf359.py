@@ -2,13 +2,14 @@ import sys, socket, pickle, hashlib
 from cryptography.fernet import Fernet
 import wolframalpha
 
+
 def main():
     host = ''
     port = 5000
     size = 1024
     backlog = 1
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.bind((host,port))
+    s.bind((host, port))
     s.listen(backlog)
     server_address = socket.gethostbyname(socket.gethostname())
     print("Server IP Address: ", server_address)
@@ -62,7 +63,7 @@ def main():
 
             print("Response from WolframAlpha: ", resultText)
 
-            #Encrypt response here
+            # Encrypt response here
             encrypted_response = f.encrypt(resultText.encode('utf-8'))
 
             result_m5hash = checksum(encrypted_response)

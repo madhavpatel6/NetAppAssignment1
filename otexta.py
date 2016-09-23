@@ -9,7 +9,7 @@ def main():
     print("Question Asked: ", question)
     host = sys.argv[2]
 
-    #Should port be a command line argument?
+    # Should port be a command line argument?
     port = 5000
     print("Server IP Address: ", host)
     size = 1024
@@ -25,22 +25,22 @@ def main():
     encrypted_question = f.encrypt(str(question).encode('utf-8'))
     print("Encrypted Question: ", encrypted_question)
 
-    #compute MD5 Hash (Checksum)
+    # compute MD5 Hash (Checksum)
     questionchecksum = checksum(encrypted_question)
     print("MD5 Hash: ", questionchecksum)
 
-    #Create a question payload
+    # Create a question payload
     questionpayload = (fernet_key, encrypted_question, questionchecksum, host)
     print("Question Payload: ", questionpayload)
 
-    #Pickle the tuple to a string
+    # Pickle the tuple to a string
     questionpayloadstring = pickle.dumps(questionpayload)
     print("Question Payload String: ", questionpayloadstring)
 
-    #Send the question
+    # Send the question
     s.send(questionpayloadstring)
 
-    #Wait for a Response
+    # Wait for a Response
     data = s.recv(size)
     if data:
         response = pickle.loads(data)
@@ -49,19 +49,19 @@ def main():
             s.close()
         print("Response: ", response)
 
-        computedresponsechecksum = checksum(response[0])
-        print("Computed Checksum: ", computedresponsechecksum)
+        computed_response_checksum = checksum(response[0])
+        print("Computed Checksum: ", computed_response_checksum)
 
         decrypted_response = f.decrypt(response[0])
         print("Decrypted response: ", decrypted_response)
 
         # Compare computed MD5 Hash with received hash
-        if computedresponsechecksum != response[1]:
+        if computed_response_checksum != response[1]:
             print('Invalid response checksum.')
             s.close()
         print("Response payload checksum OK.")
-        responsetext = decrypted_response
-        print('Result: ', responsetext)
+        response_text = decrypted_response
+        print('Result: ', response_text)
     s.close()
 
 
