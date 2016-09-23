@@ -1,14 +1,16 @@
+#! /usr/bin/python3
 import sys, socket, pickle, hashlib
 from cryptography.fernet import Fernet
 import wolframalpha
 import time
 import RPi.GPIO as GPIO
 
-# Pin Green
+GPIO.setmode(GPIO.BCM)
+# Pin red
 GPIO.setup(4, GPIO.OUT)
-# Pin Blue
+# Pin green
 GPIO.setup(17, GPIO.OUT)
-# Pin Red
+# Pin blue
 GPIO.setup(27, GPIO.OUT)
 
 def main():
@@ -28,10 +30,10 @@ def main():
     while 1:
         print("Waiting for client to connect.")
         # turn led red
-        time.delay(2)
-        GPIO.output(27, GPIO.HIGH)
-        GPIO.output(4, GPIO.LOW)
+        time.sleep(2)
+        GPIO.output(4, GPIO.HIGH)
         GPIO.output(17, GPIO.LOW)
+        GPIO.output(27, GPIO.LOW)
 
         client, address = s.accept()
         print("Client Connected: ", address)
@@ -40,9 +42,9 @@ def main():
         print("Received payload from client.")
         time.sleep(2)
         # turn led yellow
-        GPIO.output(27, GPIO.HIGH)
         GPIO.output(4, GPIO.HIGH)
-        GPIO.output(17, GPIO.LOW)
+        GPIO.output(17, GPIO.HIGH)
+        GPIO.output(27, GPIO.LOW)
         if data:
             # Load the data into a tuple
             questionpayload = pickle.loads(data)
@@ -77,19 +79,19 @@ def main():
             f = Fernet(fernet_key)
             question = f.decrypt(encrypted_question)
 
-            time.delay(2)
+            time.sleep(2)
             # turn led cyan
-            GPIO.output(27, GPIO.LOW)
-            GPIO.output(4, GPIO.HIGH)
+            GPIO.output(4, GPIO.LOW)
             GPIO.output(17, GPIO.HIGH)
+            GPIO.output(27, GPIO.HIGH)
             print("Sending question to wolframalpha")
             res = wclient.query(question)
             resultText = ""
-            time.delay(2)
+            time.sleep(2)
             # turn led magenta
+            GPIO.output(4, GPIO.HIGH)
+            GPIO.output(17, GPIO.LOW)
             GPIO.output(27, GPIO.HIGH)
-            GPIO.output(4, GPIO.LOW)
-            GPIO.output(17, GPIO.HIGH)
             print("Received result from wolframalpha")
             try:
                 resultText = (next(res.results).text)
@@ -110,11 +112,11 @@ def main():
             pickledresponse = pickle.dumps(response)
             print("Pickled: ", pickledresponse)
 
-            time.delay(2)
+            time.sleep(2)
             # turn led white
-            GPIO.output(27, GPIO.LOW)
-            GPIO.output(4, GPIO.LOW)
-            GPIO.output(17, GPIO.LOW)
+            GPIO.output(4, GPIO.HIGH)
+            GPIO.output(17, GPIO.HIGH)
+            GPIO.output(27, GPIO.HIGH)
             client.send(pickledresponse)
 
         client.close()
