@@ -2,6 +2,7 @@ import socket, sys, hashlib, pickle
 from cryptography.fernet import Fernet
 
 
+
 def main():
     if len(sys.argv) != 3:
         sys.exit("Usage: otexta \"Question\" \"ip_address_server\"")
