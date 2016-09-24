@@ -111,14 +111,14 @@ def main():
 
             pickledresponse = pickle.dumps(response)
             print("Pickled: ", pickledresponse)
-
+            print("Sending response to client.")
             time.sleep(2)
             # turn led white
             GPIO.output(4, GPIO.HIGH)
             GPIO.output(17, GPIO.HIGH)
             GPIO.output(27, GPIO.HIGH)
             client.send(pickledresponse)
-
+            print("Response sent to client")
         client.close()
 
 

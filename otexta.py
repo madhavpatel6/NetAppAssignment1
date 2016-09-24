@@ -60,7 +60,7 @@ def main():
         if computed_response_checksum != response[1]:
             print('Invalid response checksum.')
             s.close()
-        print("Response payload checksum OK.")
+        print("Response payload checksum OK.\n")
         response_text = decrypted_response
         print('Result: ', response_text)
     s.close()
