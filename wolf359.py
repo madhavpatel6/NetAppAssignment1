@@ -75,10 +75,11 @@ def main():
             print("Encrypted question: ", encrypted_question)
 
             # Decrypt question here
+            print("Decrypting Question")
             fernet_key = questionpayload[0]
             f = Fernet(fernet_key)
             question = f.decrypt(encrypted_question)
-
+            print("Question Asked: ", question)
             time.sleep(2)
             # turn led cyan
             GPIO.output(4, GPIO.LOW)
@@ -101,6 +102,7 @@ def main():
             print("Response from WolframAlpha: ", resultText)
 
             # Encrypt response here
+            print("Encrypting Response")
             encrypted_response = f.encrypt(resultText.encode('utf-8'))
 
             result_m5hash = checksum(encrypted_response)
